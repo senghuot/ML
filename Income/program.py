@@ -20,26 +20,56 @@ INCOME = {'<=50K':0, '>50K':1}
 
 def main():
   clf = tree.DecisionTreeClassifier(max_depth=2, criterion='entropy')
-  training_tmp = genfromtxt('data2.txt', delimiter=',',
+  train_tmp = genfromtxt('data.txt', delimiter=',',
       converters={1:convertData, 3:convertData, 5:convertData, 6:convertData, 7:convertData,
                   8:convertData, 9:convertData, 13:convertData, 14:convertData})
+  
+  # Setting up hyper parameters
+  TRAIN_LEN = int(len(train_tmp) * (2.0/3))
+
+  # Training weights
+  d = [1.0/TRAIN_LEN] * TRAIN_LEN
   
   # Training set
   train_x = []
   train_y = []
 
-  for i in range(0, int(len(training_tmp) * (2.0/3))):
-    tmp = training_tmp[i]
+  for i in range(0, TRAIN_LEN):
+    tmp = train_tmp[i]
     x = []
     for j in range(0, len(tmp)-2):
       x.append(tmp[j])
     train_x.append(x)
     train_y.append(tmp[len(tmp)-1])
 
-  clf = clf.fit(train_x, train_y)
-  print clf.predict(train_x)
-
   # Testing set
+  test_x = []
+  test_y = []
+
+  for i in range(TRAIN_LEN, len(train_tmp)):
+    tmp = train_tmp[i]
+    x = []
+    for j in range(0, len(tmp)-2):
+      x.append(tmp[j])
+    test_x.append(x)
+    test_y.append(tmp[len(tmp)-1])
+
+
+  # Convert narrays to matrices
+  train_x = matrix(train_x)
+  train_y = matrix(train_y).reshape(len(train_y),1)
+  test_x  = matrix(test_x)
+  test_y  = matrix(test_y).reshape(len(test_y),1)
+
+  # Checking for error rate
+  clf = clf.fit(train_x, train_y, sample_weight=d)
+  predicted_y = clf.predict(test_x)
+  correct = 0
+  for i in range(0, len(predicted_y)):
+    if predicted_y[i] == test_y[i]:
+      correct += 1
+
+  print 1.0 * correct / len(test_y)
 
 def convertData(string):
   string = string.lstrip()
