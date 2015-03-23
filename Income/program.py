@@ -1,4 +1,5 @@
 from numpy import *
+from sklearn import tree
 
 # Data encoding
 WORKCLASS = {'Private':0, 'Self-emp-not-inc':1, 'Self-emp-inc':2, 'Federal-gov':3, 'Local-gov':4, 'State-gov':5, 'Without-pay':6, 'Never-worked':7}
@@ -18,13 +19,31 @@ NATIVE_COUNTRY = {'United-States':0, 'Cambodia':1, 'England':2, 'Puerto-Rico':3,
 INCOME = {'<=50K':0, '>50K':1}
 
 def main():
-  training_tmp = genfromtxt('data.txt', delimiter=',',
+  clf = tree.DecisionTreeClassifier(max_depth=2, criterion='entropy')
+  training_tmp = genfromtxt('data2.txt', delimiter=',',
       converters={1:convertData, 3:convertData, 5:convertData, 6:convertData, 7:convertData,
                   8:convertData, 9:convertData, 13:convertData, 14:convertData})
-  print training_tmp
+  
+  # Training set
+  train_x = []
+  train_y = []
+
+  for i in range(0, int(len(training_tmp) * (2.0/3))):
+    tmp = training_tmp[i]
+    x = []
+    for j in range(0, len(tmp)-2):
+      x.append(tmp[j])
+    train_x.append(x)
+    train_y.append(tmp[len(tmp)-1])
+
+  clf = clf.fit(train_x, train_y)
+  print clf.predict(train_x)
+
+  # Testing set
 
 def convertData(string):
   string = string.lstrip()
+
   if string in WORKCLASS:
     return WORKCLASS[string]
   
