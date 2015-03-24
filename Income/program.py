@@ -16,10 +16,11 @@ NATIVE_COUNTRY = {'United-States':0, 'Cambodia':1, 'England':2, 'Puerto-Rico':3,
                 'Poland':16, 'Jamaica':17, 'Vietnam':18, 'Mexico':19, 'Portugal':20, 'Ireland':21, 'France':22, 'Dominican-Republic':23, 
                 'Laos':24, 'Ecuador':25, 'Taiwan':26, 'Haiti':27, 'Columbia':28, 'Hungary':29, 'Guatemala':30, 'Nicaragua':31, 'Scotland':32, 
                 'Thailand':33, 'Yugoslavia':34, 'El-Salvador':35, 'Trinadad&Tobago':36, 'Peru':37, 'Hong':38, 'Holand-Netherlands':39}
-INCOME = {'<=50K':0, '>50K':1}
+INCOME = {'<=50K':-1, '>50K':1}
+ITERATIONS = 100
 
 def main():
-  clf = tree.DecisionTreeClassifier(max_depth=2, criterion='entropy')
+  clf = tree.DecisionTreeClassifier(max_depth=3, criterion='entropy')
   train_tmp = genfromtxt('data.txt', delimiter=',',
       converters={1:convertData, 3:convertData, 5:convertData, 6:convertData, 7:convertData,
                   8:convertData, 9:convertData, 13:convertData, 14:convertData})
@@ -29,7 +30,7 @@ def main():
 
   # Training weights
   d = [1.0/TRAIN_LEN] * TRAIN_LEN
-  
+
   # Training set
   train_x = []
   train_y = []
@@ -61,15 +62,40 @@ def main():
   test_x  = matrix(test_x)
   test_y  = matrix(test_y).reshape(len(test_y),1)
 
-  # Checking for error rate
-  clf = clf.fit(train_x, train_y, sample_weight=d)
-  predicted_y = clf.predict(test_x)
-  correct = 0
-  for i in range(0, len(predicted_y)):
-    if predicted_y[i] == test_y[i]:
-      correct += 1
+  # Accumulation of Ys
+  final_y = [0] * len(test_y)
+  for iteration in range(0, ITERATIONS): 
+    # Checking for error rate for training data
+    clf = clf.fit(train_x, train_y, sample_weight=d)
+    predicted_y = clf.predict(train_x)
 
-  print 1.0 * correct / len(test_y)
+    # Getting epsilon
+    epsilon = 0
+    for i in range(0, len(predicted_y)):
+      if predicted_y[i] != train_y[i]:
+        epsilon += d[i]
+
+    if epsilon != 0:
+      # Updates and normalizing the weights
+      alpha = (1.0/2) * math.log((1-epsilon)/epsilon)
+      total_weight = 0
+      for i in range(0, len(predicted_y)):
+        power = -1.0 * alpha * train_y[i] * predicted_y[i]
+        d[i] = d[i] * math.pow(math.e, power)
+        total_weight += d[i]
+      
+      # Normalizing
+      for i in range(0, len(predicted_y)):
+        d[i] = d[i] / total_weight
+
+    # Accumulate voting on training data
+    error = 0
+    final_y += alpha * clf.predict(test_x)
+    for i in range(0, len(final_y)):
+      if sign(final_y[i]) != test_y[i]:
+        error += 1 
+    
+    print 100.0 * error / len(final_y)
 
 def convertData(string):
   string = string.lstrip()
