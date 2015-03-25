@@ -20,7 +20,7 @@ INCOME = {'<=50K':-1, '>50K':1}
 ITERATIONS = 100
 
 def main():
-  clf = tree.DecisionTreeClassifier(max_depth=3, criterion='entropy')
+  clf = tree.DecisionTreeClassifier(max_depth=2, criterion='entropy')
   train_tmp = genfromtxt('data.txt', delimiter=',',
       converters={1:convertData, 3:convertData, 5:convertData, 6:convertData, 7:convertData,
                   8:convertData, 9:convertData, 13:convertData, 14:convertData})
@@ -71,16 +71,19 @@ def main():
 
     # Getting epsilon
     epsilon = 0
+    toal_weight = 0
     for i in range(0, len(predicted_y)):
-      if predicted_y[i] != train_y[i]:
-        epsilon += d[i]
+      epsilon += d[i] * pi(predicted_y[i], train_y[i])
+      toal_weight += d[i]
+    epsilon /= toal_weight
 
+    alpha = 1
     if epsilon != 0:
       # Updates and normalizing the weights
-      alpha = (1.0/2) * math.log((1-epsilon)/epsilon)
+      alpha = math.log((1-epsilon)/epsilon)
       total_weight = 0
       for i in range(0, len(predicted_y)):
-        power = -1.0 * alpha * train_y[i] * predicted_y[i]
+        power = alpha * pi(train_y[i], predicted_y[i])
         d[i] = d[i] * math.pow(math.e, power)
         total_weight += d[i]
       
@@ -96,6 +99,11 @@ def main():
         error += 1 
     
     print 100.0 * error / len(final_y)
+
+def pi(n1, n2):
+  if n1 != n2:
+    return 1
+  return 0
 
 def convertData(string):
   string = string.lstrip()
